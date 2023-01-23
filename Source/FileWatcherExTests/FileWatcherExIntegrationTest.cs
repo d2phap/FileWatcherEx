@@ -2,6 +2,7 @@
 using FileWatcherEx;
 using FileWatcherExTests.Helper;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace FileWatcherExTests;
 
@@ -14,15 +15,16 @@ public class FileWatcherExIntegrationTest : IDisposable
     private readonly ConcurrentQueue<FileChangedEvent> _events;
     private readonly FileSystemWatcherEx _fileWatcher;
     private readonly ReplayFileSystemWatcherFactory _replayFileSystemWatcherFactory;
+    private readonly TempDir _tempDir;
 
-    public FileWatcherExIntegrationTest()
+    public FileWatcherExIntegrationTest(ITestOutputHelper testOutputHelper)
     {
         // setup before each test run
         _events = new ConcurrentQueue<FileChangedEvent>();
         _replayFileSystemWatcherFactory = new ReplayFileSystemWatcherFactory();
         
-        const string recordingDir = @"C:\temp\fwtest";
-        _fileWatcher = new FileSystemWatcherEx(recordingDir);
+        _tempDir = new TempDir();
+        _fileWatcher = new FileSystemWatcherEx(_tempDir.FullPath, testOutputHelper.WriteLine);
         _fileWatcher.FileSystemWatcherFactory = () => _replayFileSystemWatcherFactory.Create();
         _fileWatcher.IncludeSubdirectories = true;
 
@@ -36,12 +38,12 @@ public class FileWatcherExIntegrationTest : IDisposable
     [Fact]
     public void Create_Single_File()
     {
-        StartFileWatcherAndReplay(@"scenario\create_file.csv");
+        StartFileWatcherAndReplay(@"scenario/create_file.csv");
 
         Assert.Single(_events);
         var ev = _events.First();
         Assert.Equal(ChangeType.CREATED, ev.ChangeType);
-        Assert.Equal(@"C:\temp\fwtest\a.txt", ev.FullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\a.txt", ev.FullPath);
         Assert.Equal("", ev.OldFullPath);
     }
     
@@ -49,18 +51,18 @@ public class FileWatcherExIntegrationTest : IDisposable
     [Fact]
     public void Create_And_Remove_Single_File()
     {
-        StartFileWatcherAndReplay(@"scenario\create_and_remove_file.csv");
+        StartFileWatcherAndReplay(@"scenario/create_and_remove_file.csv");
 
         Assert.Equal(2, _events.Count);
         var ev1 = _events.ToList()[0];
         var ev2 = _events.ToList()[1];
 
         Assert.Equal(ChangeType.CREATED, ev1.ChangeType);
-        Assert.Equal(@"C:\temp\fwtest\a.txt", ev1.FullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\a.txt", ev1.FullPath);
         Assert.Equal("", ev1.OldFullPath);
 
         Assert.Equal(ChangeType.DELETED, ev2.ChangeType);
-        Assert.Equal(@"C:\temp\fwtest\a.txt", ev2.FullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\a.txt", ev2.FullPath);
         Assert.Equal("", ev2.OldFullPath);
     }
 
@@ -68,7 +70,7 @@ public class FileWatcherExIntegrationTest : IDisposable
     [Fact]
     public void Create_Rename_And_Remove_Single_File()
     {
-        StartFileWatcherAndReplay(@"scenario\create_rename_and_remove_file.csv");
+        StartFileWatcherAndReplay(@"scenario/create_rename_and_remove_file.csv");
 
         Assert.Equal(3, _events.Count);
         var ev1 = _events.ToList()[0];
@@ -76,14 +78,14 @@ public class FileWatcherExIntegrationTest : IDisposable
         var ev3 = _events.ToList()[2];
 
         Assert.Equal(ChangeType.CREATED, ev1.ChangeType);
-        Assert.Equal(@"C:\temp\fwtest\a.txt", ev1.FullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\a.txt", ev1.FullPath);
 
         Assert.Equal(ChangeType.RENAMED, ev2.ChangeType);
-        Assert.Equal(@"C:\temp\fwtest\b.txt", ev2.FullPath);
-        Assert.Equal(@"C:\temp\fwtest\a.txt", ev2.OldFullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\b.txt", ev2.FullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\a.txt", ev2.OldFullPath);
 
         Assert.Equal(ChangeType.DELETED, ev3.ChangeType);
-        Assert.Equal(@"C:\temp\fwtest\b.txt", ev3.FullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\b.txt", ev3.FullPath);
         Assert.Equal("", ev3.OldFullPath);
     }
 
@@ -92,12 +94,12 @@ public class FileWatcherExIntegrationTest : IDisposable
     // filters out 2nd "changed" event
     public void Create_Single_File_Via_WSL2()
     {
-        StartFileWatcherAndReplay(@"scenario\create_file_wsl2.csv");
+        StartFileWatcherAndReplay(@"scenario/create_file_wsl2.csv");
 
         Assert.Single(_events);
         var ev = _events.First();
         Assert.Equal(ChangeType.CREATED, ev.ChangeType);
-        Assert.Equal(@"C:\temp\fwtest\a.txt", ev.FullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\a.txt", ev.FullPath);
         Assert.Equal("", ev.OldFullPath);
     }
     
@@ -107,12 +109,12 @@ public class FileWatcherExIntegrationTest : IDisposable
     // resulting event is just "created" with the filename taken from "renamed"
     public void Create_And_Rename_Single_File_Via_WSL2()
     {
-        StartFileWatcherAndReplay(@"scenario\create_and_rename_file_wsl2.csv");
+        StartFileWatcherAndReplay(@"scenario/create_and_rename_file_wsl2.csv");
 
         Assert.Single(_events);
         var ev = _events.First();
         Assert.Equal(ChangeType.CREATED, ev.ChangeType);
-        Assert.Equal(@"C:\temp\fwtest\b.txt", ev.FullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\b.txt", ev.FullPath);
         Assert.Null(ev.OldFullPath);
     }
 
@@ -120,7 +122,7 @@ public class FileWatcherExIntegrationTest : IDisposable
     [Fact]
     public void Create_Rename_And_Remove_Single_File_Via_WSL2()
     {
-        StartFileWatcherAndReplay(@"scenario\create_rename_and_remove_file_wsl2.csv");
+        StartFileWatcherAndReplay(@"scenario/create_rename_and_remove_file_wsl2.csv");
         Assert.Empty(_events);
     }
 
@@ -128,7 +130,7 @@ public class FileWatcherExIntegrationTest : IDisposable
     [Fact]
     public void Create_Rename_And_Remove_Single_File_With_Wait_Time_Via_WSL2()
     {
-        StartFileWatcherAndReplay(@"scenario\create_rename_and_remove_file_with_wait_time_wsl2.csv");
+        StartFileWatcherAndReplay(@"scenario/create_rename_and_remove_file_with_wait_time_wsl2.csv");
 
         Assert.Equal(3, _events.Count);
         var ev1 = _events.ToList()[0];
@@ -136,14 +138,14 @@ public class FileWatcherExIntegrationTest : IDisposable
         var ev3 = _events.ToList()[2];
 
         Assert.Equal(ChangeType.CREATED, ev1.ChangeType);
-        Assert.Equal(@"C:\temp\fwtest\a.txt", ev1.FullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\a.txt", ev1.FullPath);
 
         Assert.Equal(ChangeType.RENAMED, ev2.ChangeType);
-        Assert.Equal(@"C:\temp\fwtest\b.txt", ev2.FullPath);
-        Assert.Equal(@"C:\temp\fwtest\a.txt", ev2.OldFullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\b.txt", ev2.FullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\a.txt", ev2.OldFullPath);
 
         Assert.Equal(ChangeType.DELETED, ev3.ChangeType);
-        Assert.Equal(@"C:\temp\fwtest\b.txt", ev3.FullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\b.txt", ev3.FullPath);
         Assert.Equal("", ev3.OldFullPath);
     }
     
@@ -151,7 +153,7 @@ public class FileWatcherExIntegrationTest : IDisposable
     [Fact]
     public void Manually_Create_And_Rename_File_Via_Windows_Explorer()
     {
-        StartFileWatcherAndReplay(@"scenario\create_and_rename_file_via_explorer.csv");
+        StartFileWatcherAndReplay(@"scenario/create_and_rename_file_via_explorer.csv");
 
         Assert.Equal(2, _events.Count);
 
@@ -159,17 +161,17 @@ public class FileWatcherExIntegrationTest : IDisposable
         var ev2 = _events.ToList()[1];
 
         Assert.Equal(ChangeType.CREATED, ev1.ChangeType);
-        Assert.Equal(@"C:\temp\fwtest\New Text Document.txt", ev1.FullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\New Text Document.txt", ev1.FullPath);
 
         Assert.Equal(ChangeType.RENAMED, ev2.ChangeType);
-        Assert.Equal(@"C:\temp\fwtest\foo.txt", ev2.FullPath);
-        Assert.Equal(@"C:\temp\fwtest\New Text Document.txt", ev2.OldFullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\foo.txt", ev2.FullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\New Text Document.txt", ev2.OldFullPath);
     }
 
     [Fact]
     public void Manually_Create_Rename_And_Delete_File_Via_Windows_Explorer()
     {
-        StartFileWatcherAndReplay(@"scenario\create_rename_and_delete_file_via_explorer.csv");
+        StartFileWatcherAndReplay(@"scenario/create_rename_and_delete_file_via_explorer.csv");
 
         Assert.Equal(3, _events.Count);
         var ev1 = _events.ToList()[0];
@@ -177,56 +179,56 @@ public class FileWatcherExIntegrationTest : IDisposable
         var ev3 = _events.ToList()[2];
 
         Assert.Equal(ChangeType.CREATED, ev1.ChangeType);
-        Assert.Equal(@"C:\temp\fwtest\New Text Document.txt", ev1.FullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\New Text Document.txt", ev1.FullPath);
 
         Assert.Equal(ChangeType.RENAMED, ev2.ChangeType);
-        Assert.Equal(@"C:\temp\fwtest\foo.txt", ev2.FullPath);
-        Assert.Equal(@"C:\temp\fwtest\New Text Document.txt", ev2.OldFullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\foo.txt", ev2.FullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\New Text Document.txt", ev2.OldFullPath);
 
         Assert.Equal(ChangeType.DELETED, ev3.ChangeType);
-        Assert.Equal(@"C:\temp\fwtest\foo.txt", ev3.FullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\foo.txt", ev3.FullPath);
         Assert.Equal("", ev3.OldFullPath);
     }
 
     [Fact]
     public void Download_Image_Via_Edge_Browser()
     {
-        StartFileWatcherAndReplay(@"scenario\download_image_via_Edge_browser.csv");
+        StartFileWatcherAndReplay(@"scenario/download_image_via_Edge_browser.csv");
 
         Assert.Equal(2, _events.Count);
         var ev1 = _events.ToList()[0];
         var ev2 = _events.ToList()[1];
 
         Assert.Equal(ChangeType.CREATED, ev1.ChangeType);
-        Assert.Equal(@"C:\temp\fwtest\test.png.crdownload", ev1.FullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\test.png.crdownload", ev1.FullPath);
         
         Assert.Equal(ChangeType.RENAMED, ev2.ChangeType);
-        Assert.Equal(@"C:\temp\fwtest\test.png", ev2.FullPath);
-        Assert.Equal(@"C:\temp\fwtest\test.png.crdownload", ev2.OldFullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\test.png", ev2.FullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\test.png.crdownload", ev2.OldFullPath);
     }
 
     // instantly removed file is not in the events list
     [Fact]
     public void Create_Sub_Directory_Add_And_Remove_File()
     {
-        StartFileWatcherAndReplay(@"scenario\create_subdirectory_add_and_remove_file.csv");
+        StartFileWatcherAndReplay(@"scenario/create_subdirectory_add_and_remove_file.csv");
 
         Assert.Equal(2, _events.Count);
         var ev1 = _events.ToList()[0];
         var ev2 = _events.ToList()[1];
         
         Assert.Equal(ChangeType.CREATED, ev1.ChangeType);
-        Assert.Equal(@"C:\temp\fwtest\subdir", ev1.FullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\subdir", ev1.FullPath);
         
         Assert.Equal(ChangeType.CHANGED, ev2.ChangeType);
-        Assert.Equal(@"C:\temp\fwtest\subdir", ev2.FullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\subdir", ev2.FullPath);
         Assert.Equal(@"", ev2.OldFullPath);
     }
-    
+
     [Fact]
     public void Create_Sub_Directory_Add_And_Remove_File_With_Sleep()
     {
-        StartFileWatcherAndReplay(@"scenario\create_subdirectory_add_and_remove_file_with_sleep.csv");
+        StartFileWatcherAndReplay(@"scenario/create_subdirectory_add_and_remove_file_with_sleep.csv");
 
         Assert.Equal(4, _events.Count);
         var ev1 = _events.ToList()[0];
@@ -235,19 +237,19 @@ public class FileWatcherExIntegrationTest : IDisposable
         var ev4 = _events.ToList()[3];
         
         Assert.Equal(ChangeType.CREATED, ev1.ChangeType);
-        Assert.Equal(@"C:\temp\fwtest\subdir", ev1.FullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\subdir", ev1.FullPath);
         
         Assert.Equal(ChangeType.CREATED, ev2.ChangeType);
-        Assert.Equal(@"C:\temp\fwtest\subdir\a.txt", ev2.FullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\subdir\a.txt", ev2.FullPath);
         Assert.Equal(@"", ev2.OldFullPath);
 
         // TODO this could be filtered out
         Assert.Equal(ChangeType.CHANGED, ev3.ChangeType);
-        Assert.Equal(@"C:\temp\fwtest\subdir", ev3.FullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\subdir", ev3.FullPath);
         Assert.Equal(@"", ev3.OldFullPath);
 
         Assert.Equal(ChangeType.DELETED, ev4.ChangeType);
-        Assert.Equal(@"C:\temp\fwtest\subdir\a.txt", ev4.FullPath);
+        AssertEqualNormalized(@"C:\temp\fwtest\subdir\a.txt", ev4.FullPath);
         Assert.Equal(@"", ev4.OldFullPath);
     }
 
@@ -330,6 +332,7 @@ public class FileWatcherExIntegrationTest : IDisposable
     public void Dispose()
     {
         _fileWatcher.Dispose();
+        _tempDir.Dispose();
     }
 
     private void StartFileWatcherAndReplay(string csvFile)
@@ -356,5 +359,12 @@ public class FileWatcherExIntegrationTest : IDisposable
         // At integration test, we're only interested in the root file watcher.
         // This is the one which is registered first and watches the root directory.
         public ReplayFileSystemWatcherWrapper RootWatcher => _wrappers[0];
+    }
+    
+    // little hack to make the path comparision platform independent 
+    private static void AssertEqualNormalized(string expected, string? actual)
+    {
+        actual = actual?.Replace("/", @"\");
+        Assert.Equal(expected, actual);
     }
 }

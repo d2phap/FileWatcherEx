@@ -74,7 +74,7 @@
             this.txtPath.Name = "txtPath";
             this.txtPath.Size = new System.Drawing.Size(508, 57);
             this.txtPath.TabIndex = 2;
-            this.txtPath.Text = "C:\\Users\\d2pha\\Desktop\\New folder";
+            this.txtPath.Text = "C:\\";
             // 
             // btnStart
             // 

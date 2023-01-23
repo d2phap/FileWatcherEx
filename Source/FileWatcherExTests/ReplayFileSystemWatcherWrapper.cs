@@ -72,7 +72,7 @@ public class ReplayFileSystemWatcherWrapper : IFileSystemWatcherWrapper
     public event FileSystemEventHandler? Changed;
     public event RenamedEventHandler? Renamed;
 
-    // unused in replay implementation
+    #pragma warning disable CS8618 // unused in replay implementation
     public string Path { get; set; }
 
     public Collection<string> Filters => _filters;
@@ -80,6 +80,8 @@ public class ReplayFileSystemWatcherWrapper : IFileSystemWatcherWrapper
     public bool IncludeSubdirectories { get; set; }
     public bool EnableRaisingEvents { get; set; }
     public NotifyFilters NotifyFilter { get; set; }
+
+    #pragma warning disable CS0067 // unused in replay implementation
     public event ErrorEventHandler? Error;
     public int InternalBufferSize { get; set; }
     public ISynchronizeInvoke? SynchronizingObject { get; set; }

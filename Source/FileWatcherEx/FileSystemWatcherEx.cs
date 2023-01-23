@@ -17,9 +17,9 @@ public class FileSystemWatcherEx : IDisposable, IFileSystemWatcherEx
     private EventProcessor? _processor;
     private readonly BlockingCollection<FileChangedEvent> _fileEventQueue = new();
 
-    private FileWatcher? _watcher;
-    private IFileSystemWatcherWrapper? _fsw;
+    private SymlinkAwareFileWatcher? _watcher;
     private Func<IFileSystemWatcherWrapper>? _fswFactory;
+    private readonly Action<string> _logger;
 
     // Define the cancellation token.
     private CancellationTokenSource? _cancelSource;
@@ -86,6 +86,7 @@ public class FileSystemWatcherEx : IDisposable, IFileSystemWatcherEx
 
     #endregion
 
+
     #region Public Events
 
     /// <summary>
@@ -134,11 +135,13 @@ public class FileSystemWatcherEx : IDisposable, IFileSystemWatcherEx
     /// Initialize new instance of <see cref="FileSystemWatcherEx"/>
     /// </summary>
     /// <param name="folderPath"></param>
-    public FileSystemWatcherEx(string folderPath = "")
+    /// <param name="logger">Optional Action to log out library internals</param>
+    public FileSystemWatcherEx(string folderPath = "", Action<string>? logger = null)
     {
         FolderPath = folderPath;
+        _logger = logger ?? (_ => {}) ;
     }
-
+    
 
     /// <summary>
     /// Start watching files
@@ -233,10 +236,10 @@ public class FileSystemWatcherEx : IDisposable, IFileSystemWatcherEx
             }
         }, (log) =>
         {
-            Console.WriteLine(string.Format("{0} | {1}", Enum.GetName(typeof(ChangeType), ChangeType.LOG), log));
+            Console.WriteLine($"{Enum.GetName(typeof(ChangeType), ChangeType.LOG)} | {log}");
         });
 
-        _cancelSource = new();
+        _cancelSource = new CancellationTokenSource();
         _thread = new Thread(() => Thread_DoingWork(_cancelSource.Token))
         {
             // this ensures the thread does not block the process from terminating!
@@ -247,39 +250,31 @@ public class FileSystemWatcherEx : IDisposable, IFileSystemWatcherEx
 
 
         // Log each event in our special format to output queue
-        void onEvent(FileChangedEvent e)
+        void OnEvent(FileChangedEvent e)
         {
             _fileEventQueue.Add(e);
         }
 
 
-        // OnError
-        void onError(ErrorEventArgs e)
+        void OnError(ErrorEventArgs e)
         {
             if (e != null)
             {
-                OnError?.Invoke(this, e);
+                this.OnError?.Invoke(this, e);
             }
         }
 
-
-        // Start watcher
-        _watcher = new FileWatcher();
-
-        _fsw = _watcher.Create(FolderPath, onEvent, onError, FileSystemWatcherFactory);
-
-        foreach (var filter in Filters)
+        _watcher = new SymlinkAwareFileWatcher(FolderPath, OnEvent, OnError, FileSystemWatcherFactory, _logger)
         {
-            _fsw.Filters.Add(filter);
-        }
-
-        _fsw.NotifyFilter = NotifyFilter;
-        _fsw.IncludeSubdirectories = IncludeSubdirectories;
-        _fsw.SynchronizingObject = SynchronizingObject;
-
-        // Start watching
-        _fsw.EnableRaisingEvents = true;
+            NotifyFilter = NotifyFilter,
+            IncludeSubdirectories = IncludeSubdirectories,
+            SynchronizingObject = SynchronizingObject,
+            EnableRaisingEvents = true
+        };
+        Filters.ToList().ForEach(filter => _watcher.Filters.Add(filter));
+        _watcher.Init();
     }
+
 
     internal void StartForTesting(
         Func<string, FileAttributes> getFileAttributesFunc, 
@@ -297,12 +292,6 @@ public class FileSystemWatcherEx : IDisposable, IFileSystemWatcherEx
     /// </summary>
     public void Stop()
     {
-        if (_fsw != null)
-        {
-            _fsw.EnableRaisingEvents = false;
-            _fsw.Dispose();
-        }
-
         _watcher?.Dispose();
 
         // stop the thread
@@ -316,12 +305,10 @@ public class FileSystemWatcherEx : IDisposable, IFileSystemWatcherEx
     /// </summary>
     public void Dispose()
     {
-        _fsw?.Dispose();
         _watcher?.Dispose();
         _cancelSource?.Dispose();
         GC.SuppressFinalize(this);
     }
-
 
 
     private void Thread_DoingWork(CancellationToken cancelToken)
@@ -342,6 +329,5 @@ public class FileSystemWatcherEx : IDisposable, IFileSystemWatcherEx
             }
         }
     }
-
-
 }
+
