@@ -149,6 +149,7 @@ public class FileSystemWatcherEx : IDisposable, IFileSystemWatcherEx
     public void Start()
     {
         if (!Directory.Exists(FolderPath)) return;
+        Stop();
 
 
         _processor = new EventProcessor((e) =>
@@ -293,10 +294,11 @@ public class FileSystemWatcherEx : IDisposable, IFileSystemWatcherEx
     public void Stop()
     {
         _watcher?.Dispose();
+        _watcher = null;
 
         // stop the thread
-        _cancelSource?.Cancel();
         _cancelSource?.Dispose();
+        _cancelSource = null;
     }
 
 
@@ -305,8 +307,8 @@ public class FileSystemWatcherEx : IDisposable, IFileSystemWatcherEx
     /// </summary>
     public void Dispose()
     {
-        _watcher?.Dispose();
-        _cancelSource?.Dispose();
+        Stop();
+
         GC.SuppressFinalize(this);
     }
 

@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Globalization;
 using CsvHelper;
-using FileWatcherEx;
 
 namespace FileSystemEventRecorder;
 

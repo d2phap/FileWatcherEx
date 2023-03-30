@@ -29,7 +29,7 @@ namespace Demo
 
             _fw.Start();
 
-            btnStart.Enabled = false;
+            btnStart.Enabled = true;
             btnSelectFolder.Enabled = false;
             txtPath.Enabled = false;
             btnStop.Enabled = true;
@@ -89,6 +89,7 @@ namespace Demo
             btnSelectFolder.Enabled = true;
             txtPath.Enabled = true;
             btnStop.Enabled = false;
+            btnStop.Enabled = true;
         }
 
 
