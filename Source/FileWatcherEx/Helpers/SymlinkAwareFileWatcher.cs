@@ -136,12 +136,14 @@ internal class SymlinkAwareFileWatcher : IDisposable
     {
         TryRegisterFileWatcherForSymbolicLinkDir(path);
 
-        if (Directory.Exists(path))
+        if (!IncludeSubdirectories || !Directory.Exists(path))
         {
-            foreach (var dirInfo in GetDirectoryInfosFunc(path))
-            {
-                RegisterAdditionalFileWatchersForSymLinkDirs(dirInfo.FullName);
-            }
+            return;
+        }
+        
+        foreach (var dirInfo in GetDirectoryInfosFunc(path))
+        {
+            RegisterAdditionalFileWatchersForSymLinkDirs(dirInfo.FullName);
         }
     }
 
@@ -178,7 +180,7 @@ internal class SymlinkAwareFileWatcher : IDisposable
     {
         try
         {
-            if (IsSymbolicLinkDirectory(path) && IncludeSubdirectories && !FileWatchers.ContainsKey(path))
+            if (IsSymbolicLinkDirectory(path) && !FileWatchers.ContainsKey(path))
             {
                 _logger($"Directory {path} is a symbolic link dir. Will register additional file watcher.");
                 RegisterFileWatcher(path);
