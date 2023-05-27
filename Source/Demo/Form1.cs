@@ -27,12 +27,19 @@ namespace Demo
             _fw.SynchronizingObject = this;
             _fw.IncludeSubdirectories = true;
 
-            _fw.Start();
+            try
+            {
+                _fw.Start();
 
-            btnStart.Enabled = true;
-            btnSelectFolder.Enabled = false;
-            txtPath.Enabled = false;
-            btnStop.Enabled = true;
+                btnStart.Enabled = true;
+                btnSelectFolder.Enabled = false;
+                txtPath.Enabled = false;
+                btnStop.Enabled = true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
         }
 
         private void FW_OnError(object? sender, ErrorEventArgs e)

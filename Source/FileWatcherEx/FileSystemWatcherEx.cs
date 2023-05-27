@@ -272,7 +272,7 @@ public class FileSystemWatcherEx : IDisposable, IFileSystemWatcherEx
             SynchronizingObject = SynchronizingObject,
             EnableRaisingEvents = true
         };
-        Filters.ToList().ForEach(filter => _watcher.Filters.Add(filter));
+        Filters.ToList().ForEach(_watcher.Filters.Add);
         _watcher.Init();
     }
 
