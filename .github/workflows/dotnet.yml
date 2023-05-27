@@ -9,6 +9,10 @@ on:
   pull_request:
     branches: [ "main" ]
 
+defaults:
+  run:
+    working-directory: Source
+
 jobs:
   build:
 
@@ -20,8 +24,6 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: 6.0.x
-    - name: Go to Source folder
-      run: cd Source
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
