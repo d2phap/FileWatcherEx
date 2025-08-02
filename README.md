@@ -1,4 +1,4 @@
-# FileWatcherEx for Windows
+﻿# FileWatcherEx for Windows
 A wrapper of `System.IO.FileSystemWatcher` to standardize the events and avoid false change notifications. It has been being used in [ImageGlass - A lightweight, versatile image viewer](https://github.com/d2phap/ImageGlass) project.
 
 This project is based on the *VSCode FileWatcher*: https://github.com/Microsoft/vscode-filewatcher-windows
@@ -14,7 +14,7 @@ This project is based on the *VSCode FileWatcher*: https://github.com/Microsoft/
 ## Features
 - Standardizes the events of `System.IO.FileSystemWatcher`.
 - No false change notifications when a file system item is created, deleted, changed or renamed.
-- Supports .NET 6.0, 7.0.
+- Supports .NET 6.0, 7.0, 8.0, 9.0
 
 ## Installation
 Run the command:
@@ -63,6 +63,5 @@ void FW_OnRenamed(object sender, FileChangedEvent e)
 - [GitHub sponsor](https://github.com/sponsors/d2phap)
 - [Patreon](https://www.patreon.com/d2phap)
 - [PayPal](https://www.paypal.me/d2phap)
-- [Wire Transfers](https://donorbox.org/imageglass)
 
 Thanks for your gratitude and finance help!

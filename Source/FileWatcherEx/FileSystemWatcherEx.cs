@@ -1,25 +1,28 @@
 ﻿
+using FileWatcherEx.Helpers;
 using System.Collections.Concurrent;
 using System.ComponentModel;
-using FileWatcherEx.Helpers;
 
 namespace FileWatcherEx;
+
 
 /// <summary>
 /// A wrapper of <see cref="FileSystemWatcher"/> to standardize the events
 /// and avoid false change notifications.
 /// </summary>
-public class FileSystemWatcherEx : IDisposable, IFileSystemWatcherEx
+/// <param name="folderPath"></param>
+/// <param name="logger">Optional Action to log out library internals</param>
+public class FileSystemWatcherEx(string folderPath = "", Action<string>? logger = null) : IDisposable, IFileSystemWatcherEx
 {
     #region Private Properties
 
     private Thread? _thread;
     private EventProcessor? _processor;
-    private readonly BlockingCollection<FileChangedEvent> _fileEventQueue = new();
+    private readonly BlockingCollection<FileChangedEvent> _fileEventQueue = [];
 
     private SymlinkAwareFileWatcher? _watcher;
     private Func<IFileSystemWatcherWrapper>? _fswFactory;
-    private readonly Action<string> _logger;
+    private readonly Action<string> _logger = logger ?? (_ => { });
 
     // Define the cancellation token.
     private CancellationTokenSource? _cancelSource;
@@ -40,13 +43,13 @@ public class FileSystemWatcherEx : IDisposable, IFileSystemWatcherEx
     /// <summary>
     /// Gets or sets the path of the directory to watch.
     /// </summary>
-    public string FolderPath { get; set; } = "";
+    public string FolderPath { get; set; } = folderPath;
 
 
     /// <summary>
     /// Gets the collection of all the filters used to determine what files are monitored in a directory.
     /// </summary>
-    public System.Collections.ObjectModel.Collection<string> Filters { get; } = new();
+    public System.Collections.ObjectModel.Collection<string> Filters { get; } = [];
 
 
     /// <summary>
@@ -131,17 +134,6 @@ public class FileSystemWatcherEx : IDisposable, IFileSystemWatcherEx
     #endregion
 
 
-    /// <summary>
-    /// Initialize new instance of <see cref="FileSystemWatcherEx"/>
-    /// </summary>
-    /// <param name="folderPath"></param>
-    /// <param name="logger">Optional Action to log out library internals</param>
-    public FileSystemWatcherEx(string folderPath = "", Action<string>? logger = null)
-    {
-        FolderPath = folderPath;
-        _logger = logger ?? (_ => {}) ;
-    }
-    
 
     /// <summary>
     /// Start watching files
@@ -164,15 +156,13 @@ public class FileSystemWatcherEx : IDisposable, IFileSystemWatcherEx
                     {
                         if (SynchronizingObject != null && SynchronizingObject.InvokeRequired)
                         {
-                            SynchronizingObject.Invoke(new Action<object, FileChangedEvent>(InvokeChangedEvent), new object[] { SynchronizingObject, e });
+                            SynchronizingObject.Invoke(new Action<object, FileChangedEvent>(InvokeChangedEvent), [SynchronizingObject, e]);
                         }
                         else
                         {
                             OnChanged?.Invoke(SynchronizingObject, e);
                         }
                     }
-
-
                     break;
 
                 case ChangeType.CREATED:
@@ -183,15 +173,13 @@ public class FileSystemWatcherEx : IDisposable, IFileSystemWatcherEx
                     {
                         if (SynchronizingObject != null && SynchronizingObject.InvokeRequired)
                         {
-                            SynchronizingObject.Invoke(new Action<object, FileChangedEvent>(InvokeCreatedEvent), new object[] { SynchronizingObject, e });
+                            SynchronizingObject.Invoke(new Action<object, FileChangedEvent>(InvokeCreatedEvent), args: [SynchronizingObject, e]);
                         }
                         else
                         {
                             OnCreated?.Invoke(SynchronizingObject, e);
                         }
                     }
-
-
                     break;
 
                 case ChangeType.DELETED:
@@ -202,15 +190,13 @@ public class FileSystemWatcherEx : IDisposable, IFileSystemWatcherEx
                     {
                         if (SynchronizingObject != null && SynchronizingObject.InvokeRequired)
                         {
-                            SynchronizingObject.Invoke(new Action<object, FileChangedEvent>(InvokeDeletedEvent), new object[] { SynchronizingObject, e });
+                            SynchronizingObject.Invoke(new Action<object, FileChangedEvent>(InvokeDeletedEvent), [SynchronizingObject, e]);
                         }
                         else
                         {
                             OnDeleted?.Invoke(SynchronizingObject, e);
                         }
                     }
-
-
                     break;
 
                 case ChangeType.RENAMED:
@@ -221,15 +207,13 @@ public class FileSystemWatcherEx : IDisposable, IFileSystemWatcherEx
                     {
                         if (SynchronizingObject != null && SynchronizingObject.InvokeRequired)
                         {
-                            SynchronizingObject.Invoke(new Action<object, FileChangedEvent>(InvokeRenamedEvent), new object[] { SynchronizingObject, e });
+                            SynchronizingObject.Invoke(new Action<object, FileChangedEvent>(InvokeRenamedEvent), [SynchronizingObject, e]);
                         }
                         else
                         {
                             OnRenamed?.Invoke(SynchronizingObject, e);
                         }
                     }
-
-
                     break;
 
                 default:
@@ -237,7 +221,7 @@ public class FileSystemWatcherEx : IDisposable, IFileSystemWatcherEx
             }
         }, (log) =>
         {
-            Console.WriteLine($"{Enum.GetName(typeof(ChangeType), ChangeType.LOG)} | {log}");
+            Console.WriteLine($"{Enum.GetName(ChangeType.LOG)} | {log}");
         });
 
         _cancelSource = new CancellationTokenSource();
@@ -278,7 +262,7 @@ public class FileSystemWatcherEx : IDisposable, IFileSystemWatcherEx
 
 
     internal void StartForTesting(
-        Func<string, FileAttributes> getFileAttributesFunc, 
+        Func<string, FileAttributes> getFileAttributesFunc,
         Func<string, DirectoryInfo[]> getDirectoryInfosFunc)
     {
         Start();

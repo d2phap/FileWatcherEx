@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>net6.0;net7.0;net8.0;net9.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Copyright>Copyright © 2018-2023 Duong Dieu Phap</Copyright>
+    <Copyright>Copyright © 2018-2025 Duong Dieu Phap</Copyright>
     <PackageProjectUrl>https://github.com/d2phap/FileWatcherEx</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/d2phap/FileWatcherEx</RepositoryUrl>
@@ -13,7 +13,7 @@
     <Description>A wrapper of FileSystemWatcher to standardize the events and avoid false change notifications, used in ImageGlass project (https://imageglass.org). This project is based on the VSCode FileWatcher: https://github.com/Microsoft/vscode-filewatcher-windows.</Description>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <FileVersion>$(Version)</FileVersion>
-    <VersionPrefix>2.6.0</VersionPrefix>
+    <VersionPrefix>2.7.0</VersionPrefix>
     <PackageReleaseNotes>See https://github.com/d2phap/FileWatcherEx/releases</PackageReleaseNotes>
     <Authors>d2phap</Authors>
     <Title>FileWatcherEx - A file system watcher</Title>
@@ -21,6 +21,7 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <SignAssembly>False</SignAssembly>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

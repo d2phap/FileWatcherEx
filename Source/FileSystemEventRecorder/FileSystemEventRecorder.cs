@@ -1,14 +1,14 @@
-﻿using System.Collections.Concurrent;
+﻿using CsvHelper;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
-using CsvHelper;
 
 namespace FileSystemEventRecorder;
 
 // event received from C# FileSystemWatcher
 internal record EventRecord(
-    string FullPath, 
-    string EventName, 
+    string FullPath,
+    string EventName,
     string? OldFullPath, // only provided by "rename" event
     long NowInTicks
 );
@@ -33,7 +33,7 @@ public static class FileSystemEventRecords
 
     public static void Main(string[] args)
     {
-        var (watchedDirectory, csvOutputFile) = ProcessArguments(args); 
+        var (watchedDirectory, csvOutputFile) = ProcessArguments(args);
 
         var watcher = new FileSystemWatcher();
         watcher.Path = watchedDirectory;
@@ -48,7 +48,7 @@ public static class FileSystemEventRecords
             EventRecords.Enqueue(new EventRecord(ev.FullPath, "deleted", null, Stopwatch.GetTimestamp()));
 
         watcher.Changed += (_, ev) =>
-            EventRecords.Enqueue(new EventRecord(ev.FullPath, "changed", null,  Stopwatch.GetTimestamp()));
+            EventRecords.Enqueue(new EventRecord(ev.FullPath, "changed", null, Stopwatch.GetTimestamp()));
         watcher.Renamed += (_, ev) =>
             EventRecords.Enqueue(new EventRecord(ev.FullPath, "renamed", ev.OldFullPath, Stopwatch.GetTimestamp()));
         watcher.Error += (_, ev) =>
@@ -96,7 +96,7 @@ public static class FileSystemEventRecords
         else
         {
             Console.WriteLine($"Recorded {EventRecords.Count} file system events.");
-            var records = MapToDiffTicks();
+            var records = MapToDiffTicks;
 
             Console.WriteLine($"Writing CSV to {csvOutputFile}.");
             using (var writer = new StreamWriter(csvOutputFile))
@@ -110,35 +110,39 @@ public static class FileSystemEventRecords
     }
 
     // post-process queue. Calculate difference between previous and current event 
-    private static IEnumerable<EventRecordWithDiff> MapToDiffTicks()
+    private static IEnumerable<EventRecordWithDiff> MapToDiffTicks
     {
-        List<EventRecordWithDiff> eventsWithDiffs = new();
-        long previousTicks = 0;
-        foreach (var eventRecord in EventRecords)
+        get
         {
-            var diff = previousTicks switch
+            List<EventRecordWithDiff> eventsWithDiffs = [];
+            long previousTicks = 0;
+
+            foreach (var eventRecord in EventRecords)
             {
-                0 => 0, // first run
-                _ => eventRecord.NowInTicks - previousTicks
-            };
+                var diff = previousTicks switch
+                {
+                    0 => 0, // first run
+                    _ => eventRecord.NowInTicks - previousTicks
+                };
 
-            previousTicks = eventRecord.NowInTicks;
-            double diffInMilliseconds = Convert.ToInt64(new TimeSpan(diff).TotalMilliseconds);
+                previousTicks = eventRecord.NowInTicks;
+                double diffInMilliseconds = Convert.ToInt64(new TimeSpan(diff).TotalMilliseconds);
 
-            var directory = Path.GetDirectoryName(eventRecord.FullPath) ?? "";
-            var fileName = Path.GetFileName(eventRecord.FullPath);
-            var oldFileName = Path.GetFileName(eventRecord.OldFullPath);
-            
-            var record = new EventRecordWithDiff(
-                directory,
-                fileName,
-                eventRecord.EventName,
-                oldFileName,
-                diff,
-                diffInMilliseconds);
-            eventsWithDiffs.Add(record);
+                var directory = Path.GetDirectoryName(eventRecord.FullPath) ?? "";
+                var fileName = Path.GetFileName(eventRecord.FullPath);
+                var oldFileName = Path.GetFileName(eventRecord.OldFullPath);
+
+                var record = new EventRecordWithDiff(
+                    directory,
+                    fileName,
+                    eventRecord.EventName,
+                    oldFileName,
+                    diff,
+                    diffInMilliseconds);
+                eventsWithDiffs.Add(record);
+            }
+
+            return eventsWithDiffs;
         }
-
-        return eventsWithDiffs;
     }
 }

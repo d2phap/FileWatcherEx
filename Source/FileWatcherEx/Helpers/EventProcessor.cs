@@ -4,7 +4,7 @@
 
 namespace FileWatcherEx.Helpers;
 
-internal class EventProcessor
+internal class EventProcessor(Action<FileChangedEvent> onEvent, Action<string> onLogging)
 {
     /// <summary>
     /// Aggregate and only emit events when changes have stopped for this duration (in ms)
@@ -16,25 +16,22 @@ internal class EventProcessor
     /// </summary>
     private readonly TimeSpan _eventSpamWarningThreshold = TimeSpan.FromMinutes(1);
 
+#if NET9_0_OR_GREATER
+    private readonly Lock _lock = new();
+#else
     private readonly object _lock = new();
+#endif
     private Task? _delayTask = null;
 
-    private readonly List<FileChangedEvent> _events = new();
-    private readonly Action<FileChangedEvent> _handleEvent;
-
-    private readonly Action<string> _logger;
+    private readonly List<FileChangedEvent> _events = [];
+    private readonly Action<FileChangedEvent> _handleEvent = onEvent;
+    private readonly Action<string> _logger = onLogging;
 
     private long _lastEventTime = 0;
     private long _delayStarted = 0;
 
     private long _spamCheckStartTime = 0;
     private bool _spamWarningLogged = false;
-    
-    public EventProcessor(Action<FileChangedEvent> onEvent, Action<string> onLogging)
-    {
-        _handleEvent = onEvent;
-        _logger = onLogging;
-    }
 
 
     public void ProcessEvent(FileChangedEvent fileEvent)
@@ -66,7 +63,7 @@ internal class EventProcessor
             if (_delayStarted == _lastEventTime)
             {
                 // Normalize and handle
-                var normalized = new EventNormalizer().Normalize(_events.ToArray());
+                var normalized = new EventNormalizer().Normalize([.. _events]);
                 foreach (var ev in normalized)
                 {
                     _handleEvent(ev);
@@ -94,7 +91,7 @@ internal class EventProcessor
             _spamWarningLogged = false;
             _spamCheckStartTime = now;
         }
-        else if (! _spamWarningLogged && _spamCheckStartTime + _eventSpamWarningThreshold.Ticks < now)
+        else if (!_spamWarningLogged && _spamCheckStartTime + _eventSpamWarningThreshold.Ticks < now)
         {
             _spamWarningLogged = true;
             _logger($"Warning: Watcher is busy catching up with {_events.Count} file changes " +

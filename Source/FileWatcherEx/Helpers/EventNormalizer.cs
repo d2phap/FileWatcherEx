@@ -128,15 +128,15 @@ internal class EventNormalizer
     internal static bool IsParent(string path, string candidatePath)
     {
         // if exists, remove trailing "\" for both paths
-        candidatePath = candidatePath.TrimEnd('\\'); 
+        candidatePath = candidatePath.TrimEnd('\\');
         path = path.TrimEnd('\\');
-        return path.IndexOf(candidatePath + '\\', StringComparison.Ordinal) == 0;
+        return path.StartsWith(candidatePath + '\\', StringComparison.Ordinal);
     }
 
 
     private class FileEventRepository
     {
-        private readonly Dictionary<string, FileChangedEvent> _mapPathToEvents = new();
+        private readonly Dictionary<string, FileChangedEvent> _mapPathToEvents = [];
 
         public void AddOrUpdate(FileChangedEvent newEvent)
         {
@@ -166,7 +166,7 @@ internal class EventNormalizer
 
         public List<FileChangedEvent> Events()
         {
-            return _mapPathToEvents.Values.ToList();
+            return [.. _mapPathToEvents.Values];
         }
     }
 }

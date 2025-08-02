@@ -7,15 +7,34 @@ using System.ComponentModel;
 
 namespace FileWatcherEx.Helpers;
 
-internal class SymlinkAwareFileWatcher : IDisposable
+
+/// <summary>
+/// Create new instance of <see cref="FileSystemWatcherWrapper"/>.
+/// Object creation follows this order:
+/// <list type="table">
+///   <item>1) create new instance</item>
+///   <item>2) set properties (optional)</item>
+///   <item>3) call <see cref="Init"/> (mandatory)</item>
+/// </list>
+/// </summary>
+/// <param name="path">Full folder path to watcher</param>
+/// <param name="onEvent">onEvent callback</param>
+/// <param name="onError">onError callback</param>
+/// <param name="watcherFactory">how to create a FileSystemWatcher</param>
+/// <param name="logger">logging callback</param>
+internal class SymlinkAwareFileWatcher(string path,
+    Action<FileChangedEvent> onEvent,
+    Action<ErrorEventArgs> onError,
+    Func<IFileSystemWatcherWrapper> watcherFactory,
+    Action<string> logger) : IDisposable
 {
-    private readonly string _watchPath;
-    private readonly Action<FileChangedEvent>? _eventCallback;
-    private readonly Action<ErrorEventArgs>? _onError;
+    private readonly string _watchPath = path;
+    private readonly Action<FileChangedEvent>? _eventCallback = onEvent;
+    private readonly Action<ErrorEventArgs>? _onError = onError;
     private Func<string, FileAttributes>? _getFileAttributesFunc;
     private Func<string, DirectoryInfo[]>? _getDirectoryInfosFunc;
-    private readonly Func<IFileSystemWatcherWrapper> _watcherFactory;
-    private readonly Action<string> _logger;
+    private readonly Func<IFileSystemWatcherWrapper> _watcherFactory = watcherFactory;
+    private readonly Action<string> _logger = logger;
 
 
     internal Func<string, FileAttributes> GetFileAttributesFunc
@@ -28,13 +47,13 @@ internal class SymlinkAwareFileWatcher : IDisposable
     {
         get
         {
-            DirectoryInfo[] DefaultFunc(string p) => new DirectoryInfo(p).GetDirectories();
+            static DirectoryInfo[] DefaultFunc(string p) => new DirectoryInfo(p).GetDirectories();
             return _getDirectoryInfosFunc ?? DefaultFunc;
         }
         set => _getDirectoryInfosFunc = value;
     }
 
-    internal Dictionary<string, IFileSystemWatcherWrapper> FileWatchers { get; } = new();
+    internal Dictionary<string, IFileSystemWatcherWrapper> FileWatchers { get; } = [];
 
     // defaults from:
     // https://learn.microsoft.com/en-us/dotnet/api/system.io.filesystemwatcher.notifyfilter?view=net-7.0#property-value
@@ -42,44 +61,20 @@ internal class SymlinkAwareFileWatcher : IDisposable
                                                       | NotifyFilters.FileName
                                                       | NotifyFilters.DirectoryName;
     public bool EnableRaisingEvents { get; set; }
-    
+
     public bool IncludeSubdirectories { get; set; }
-    
-    public Collection<string> Filters { get; } = new();
+
+    public Collection<string> Filters { get; } = [];
 
     public ISynchronizeInvoke? SynchronizingObject { get; set; }
 
-
-    /// <summary>
-    /// Create new instance of <see cref="FileSystemWatcherWrapper"/>.
-    /// Object creation follows this order:
-    /// <list type="table">
-    ///   <item>1) create new instance</item>
-    ///   <item>2) set properties (optional)</item>
-    ///   <item>3) call init() (mandatory)</item>
-    /// </list>
-    /// </summary>
-    /// <param name="path">Full folder path to watcher</param>
-    /// <param name="onEvent">onEvent callback</param>
-    /// <param name="onError">onError callback</param>
-    /// <param name="watcherFactory">how to create a FileSystemWatcher</param>
-    /// <param name="logger">logging callback</param>
-    public SymlinkAwareFileWatcher(string path, Action<FileChangedEvent> onEvent, Action<ErrorEventArgs> onError,
-        Func<IFileSystemWatcherWrapper> watcherFactory, Action<string> logger)
-    {
-        _watchPath = path;
-        _eventCallback = onEvent;
-        _onError = onError;
-        _watcherFactory = watcherFactory;
-        _logger = logger;
-    }
 
     public void Init()
     {
         RegisterFileWatcher(_watchPath);
         RegisterAdditionalFileWatchersForSymLinkDirs(_watchPath);
     }
-    
+
     private void RegisterFileWatcher(string path)
     {
         _logger($"Registering file watcher for {path}");
@@ -96,7 +91,7 @@ internal class SymlinkAwareFileWatcher : IDisposable
         fileWatcher.NotifyFilter = NotifyFilter;
         fileWatcher.IncludeSubdirectories = IncludeSubdirectories;
         fileWatcher.EnableRaisingEvents = EnableRaisingEvents;
-        Filters.ToList().ForEach(filter => fileWatcher.Filters.Add(filter));
+        Filters.ToList().ForEach(fileWatcher.Filters.Add);
 
         // currently the sync object is only registered for the root file watcher.
         // this preserves the old behaviour
@@ -109,7 +104,7 @@ internal class SymlinkAwareFileWatcher : IDisposable
         fileWatcher.InternalBufferSize = 32768;
     }
 
-        
+
     private bool IsRootPath(string path)
     {
         return _watchPath == path;
@@ -127,7 +122,7 @@ internal class SymlinkAwareFileWatcher : IDisposable
         fileWatcher.Created += (_, e) => TryRegisterFileWatcherForSymbolicLinkDir(e.FullPath);
         fileWatcher.Deleted += UnregisterFileWatcherForSymbolicLinkDir;
     }
-    
+
     /// <summary>
     /// Recursively find sym link dir and register them.
     /// Background: the native filewatcher does not follow symlinks so they need to be treated separately.
@@ -140,7 +135,7 @@ internal class SymlinkAwareFileWatcher : IDisposable
         {
             return;
         }
-        
+
         foreach (var dirInfo in GetDirectoryInfosFunc(path))
         {
             RegisterAdditionalFileWatchersForSymLinkDirs(dirInfo.FullName);
@@ -200,9 +195,9 @@ internal class SymlinkAwareFileWatcher : IDisposable
     /// </summary>
     internal void UnregisterFileWatcherForSymbolicLinkDir(object? _, FileSystemEventArgs e)
     {
-        if (FileWatchers.ContainsKey(e.FullPath))
+        if (FileWatchers.TryGetValue(e.FullPath, out IFileSystemWatcherWrapper? value))
         {
-            FileWatchers[e.FullPath].Dispose();
+            value.Dispose();
             FileWatchers.Remove(e.FullPath);
         }
     }
@@ -218,7 +213,7 @@ internal class SymlinkAwareFileWatcher : IDisposable
     // for testing
     internal List<IFileSystemWatcherWrapper> GetFileWatchers()
     {
-        return FileWatchers.Values.ToList();
+        return [.. FileWatchers.Values];
     }
 
 

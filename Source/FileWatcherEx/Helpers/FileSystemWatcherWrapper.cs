@@ -1,7 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 
-namespace FileWatcherEx;
+namespace FileWatcherEx.Helpers;
 
 /// <summary>
 /// Interface around .NET FileSystemWatcher to be able to replace it with a fake implementation
@@ -20,11 +20,11 @@ public interface IFileSystemWatcherWrapper
     event FileSystemEventHandler Changed;
     event RenamedEventHandler Renamed;
     event ErrorEventHandler Error;
-    
+
     int InternalBufferSize { get; set; }
 
     public ISynchronizeInvoke? SynchronizingObject { get; set; }
-    
+
     void Dispose();
 }
 
