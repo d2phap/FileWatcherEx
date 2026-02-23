@@ -8,7 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\FileWatcherEx\D2Phap.FileWatcherEx.csproj" />
+      <ProjectReference Include="..\D2Phap.FileWatcherEx\D2Phap.FileWatcherEx.csproj" />
     </ItemGroup>
 
     <ItemGroup>

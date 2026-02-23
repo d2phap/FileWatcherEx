@@ -16,7 +16,7 @@
     <VersionPrefix>3.0.0</VersionPrefix>
     <PackageReleaseNotes>See https://github.com/d2phap/FileWatcherEx/releases</PackageReleaseNotes>
     <Authors>d2phap</Authors>
-    <Title>FileWatcherEx - A file system watcher</Title>
+    <Title>D2Phap.FileWatcherEx - A file system watcher</Title>
     <IncludeSymbols>True</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
@@ -27,6 +27,7 @@
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     <TrimmerRemoveSymbols>true</TrimmerRemoveSymbols>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <AnalysisLevel>latest</AnalysisLevel>
   </PropertyGroup>
 
   <ItemGroup>
