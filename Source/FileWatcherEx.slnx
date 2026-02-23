@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Demo/Demo.WinForms.csproj" />
+  <Project Path="FileSystemEventRecorder/FileSystemEventRecorder.csproj" />
+  <Project Path="FileWatcherEx/D2Phap.FileWatcherEx.csproj" />
+  <Project Path="FileWatcherExTests/FileWatcherExTests.csproj" />
+</Solution>

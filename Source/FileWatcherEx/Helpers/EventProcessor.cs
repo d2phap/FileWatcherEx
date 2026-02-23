@@ -2,7 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-namespace FileWatcherEx.Helpers;
+namespace D2Phap.FileWatcherEx.Helpers;
 
 internal class EventProcessor(Action<FileChangedEvent> onEvent, Action<string> onLogging)
 {

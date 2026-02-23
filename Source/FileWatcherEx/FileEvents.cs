@@ -1,4 +1,4 @@
-﻿namespace FileWatcherEx;
+﻿namespace D2Phap.FileWatcherEx;
 
 public enum ChangeType
 {

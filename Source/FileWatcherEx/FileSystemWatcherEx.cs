@@ -1,9 +1,9 @@
 ﻿
-using FileWatcherEx.Helpers;
+using D2Phap.FileWatcherEx.Helpers;
 using System.Collections.Concurrent;
 using System.ComponentModel;
 
-namespace FileWatcherEx;
+namespace D2Phap.FileWatcherEx;
 
 
 /// <summary>

@@ -2,13 +2,13 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\FileWatcherEx\FileWatcherEx.csproj" />
+      <ProjectReference Include="..\FileWatcherEx\D2Phap.FileWatcherEx.csproj" />
     </ItemGroup>
 
     <ItemGroup>

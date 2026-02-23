@@ -1,6 +1,4 @@
-﻿using static FileWatcherEx.ChangeType;
-
-namespace FileWatcherEx.Helpers;
+﻿namespace D2Phap.FileWatcherEx.Helpers;
 
 /// <summary>
 /// Tries to fix the real life oddities of the underlying FileSystemWatcher class.
@@ -23,25 +21,25 @@ internal class EventNormalizer
         {
             var oldEvent = _eventRepo.Find(newEvent.FullPath);
             // original file event from which we renamed, only applicable for RENAMED event
-            var renameFromEvent = newEvent.ChangeType == RENAMED
+            var renameFromEvent = newEvent.ChangeType == ChangeType.RENAMED
                 ? _eventRepo.Find(newEvent.OldFullPath)
                 : null;
 
             switch (newEvent.ChangeType)
             {
                 // CREATED followed by CHANGED => CREATED
-                case CHANGED when oldEvent?.ChangeType == CREATED:
+                case ChangeType.CHANGED when oldEvent?.ChangeType == ChangeType.CREATED:
                     // Do nothing
                     break;
 
                 // CREATED followed by DELETED => remove
-                case DELETED when oldEvent?.ChangeType == CREATED:
+                case ChangeType.DELETED when oldEvent?.ChangeType == ChangeType.CREATED:
                     _eventRepo.Remove(oldEvent);
                     break;
 
                 // DELETED followed by CREATED => CHANGED
-                case CREATED when oldEvent?.ChangeType == DELETED:
-                    oldEvent.ChangeType = CHANGED;
+                case ChangeType.CREATED when oldEvent?.ChangeType == ChangeType.DELETED:
+                    oldEvent.ChangeType = ChangeType.CHANGED;
                     break;
 
                 // Scenario:
@@ -49,8 +47,8 @@ internal class EventNormalizer
                 // - file bar is deleted
                 // - now foo is renamed to the just deleted bar
                 // - this results into a bar changed event
-                case RENAMED when oldEvent?.ChangeType == DELETED && renameFromEvent?.ChangeType == CREATED:
-                    newEvent.ChangeType = CHANGED;
+                case ChangeType.RENAMED when oldEvent?.ChangeType == ChangeType.DELETED && renameFromEvent?.ChangeType == ChangeType.CREATED:
+                    newEvent.ChangeType = ChangeType.CHANGED;
                     newEvent.OldFullPath = null;
                     _eventRepo.AddOrUpdate(newEvent);
 
@@ -59,8 +57,8 @@ internal class EventNormalizer
                     break;
 
                 // rename from CREATED file, all other cases
-                case RENAMED when renameFromEvent?.ChangeType == CREATED:
-                    newEvent.ChangeType = CREATED;
+                case ChangeType.RENAMED when renameFromEvent?.ChangeType == ChangeType.CREATED:
+                    newEvent.ChangeType = ChangeType.CREATED;
                     newEvent.OldFullPath = null;
                     _eventRepo.AddOrUpdate(newEvent);
 
@@ -68,7 +66,7 @@ internal class EventNormalizer
                     _eventRepo.Remove(renameFromEvent);
                     break;
 
-                case RENAMED when renameFromEvent?.ChangeType == RENAMED:
+                case ChangeType.RENAMED when renameFromEvent?.ChangeType == ChangeType.RENAMED:
                     newEvent.OldFullPath = renameFromEvent.OldFullPath;
                     _eventRepo.AddOrUpdate(newEvent);
 
@@ -78,7 +76,7 @@ internal class EventNormalizer
 
                 // the LOG event is not coming from the filesystem, hence it is ignored.
                 // ideally, LOG would disappear completely but unfortunately it is part of the public API of this lib
-                case LOG:
+                case ChangeType.LOG:
                     // ignore
                     break;
 
@@ -110,7 +108,7 @@ internal class EventNormalizer
 
     internal static bool IsParent(FileChangedEvent e, List<string> deletedPaths)
     {
-        if (e.ChangeType == DELETED)
+        if (e.ChangeType == ChangeType.DELETED)
         {
             if (deletedPaths.Any(d => IsParent(e.FullPath, d)))
             {

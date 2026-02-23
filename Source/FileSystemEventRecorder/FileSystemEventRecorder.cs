@@ -35,12 +35,14 @@ public static class FileSystemEventRecords
     {
         var (watchedDirectory, csvOutputFile) = ProcessArguments(args);
 
-        var watcher = new FileSystemWatcher();
-        watcher.Path = watchedDirectory;
-        watcher.IncludeSubdirectories = true;
-        watcher.NotifyFilter = NotifyFilters.LastWrite
-                               | NotifyFilters.FileName
-                               | NotifyFilters.DirectoryName;
+        var watcher = new FileSystemWatcher
+        {
+            Path = watchedDirectory,
+            IncludeSubdirectories = true,
+            NotifyFilter = NotifyFilters.LastWrite
+                                   | NotifyFilters.FileName
+                                   | NotifyFilters.DirectoryName
+        };
 
         watcher.Created += (_, ev) =>
             EventRecords.Enqueue(new EventRecord(ev.FullPath, "created", null, Stopwatch.GetTimestamp()));

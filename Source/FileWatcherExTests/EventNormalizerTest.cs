@@ -1,6 +1,6 @@
+using D2Phap.FileWatcherEx;
+using D2Phap.FileWatcherEx.Helpers;
 using Xunit;
-using FileWatcherEx;
-using FileWatcherEx.Helpers;
 
 namespace FileWatcherExTests;
 
@@ -188,7 +188,7 @@ public class EventNormalizerTest
         Assert.Equal(@"c:\foo", ev.FullPath);
         Assert.Null(ev.OldFullPath);
     }
-    
+
     [Fact]
     public void Changed_Event_After_Created_Is_Ignored()
     {

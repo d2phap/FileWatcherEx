@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace FileWatcherEx;
+namespace D2Phap.FileWatcherEx;
 
 public interface IFileSystemWatcherEx
 {

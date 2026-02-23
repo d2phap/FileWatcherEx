@@ -1,7 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 
-namespace FileWatcherEx.Helpers;
+namespace D2Phap.FileWatcherEx.Helpers;
 
 /// <summary>
 /// Interface around .NET FileSystemWatcher to be able to replace it with a fake implementation

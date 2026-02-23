@@ -1,6 +1,6 @@
-﻿using System.Collections.Concurrent;
-using FileWatcherEx;
+﻿using D2Phap.FileWatcherEx;
 using FileWatcherExTests.Helper;
+using System.Collections.Concurrent;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -22,11 +22,13 @@ public class FileWatcherExIntegrationTest : IDisposable
         // setup before each test run
         _events = new ConcurrentQueue<FileChangedEvent>();
         _replayFileSystemWatcherFactory = new ReplayFileSystemWatcherFactory();
-        
+
         _tempDir = new TempDir();
-        _fileWatcher = new FileSystemWatcherEx(_tempDir.FullPath, testOutputHelper.WriteLine);
-        _fileWatcher.FileSystemWatcherFactory = () => _replayFileSystemWatcherFactory.Create();
-        _fileWatcher.IncludeSubdirectories = true;
+        _fileWatcher = new FileSystemWatcherEx(_tempDir.FullPath, testOutputHelper.WriteLine)
+        {
+            FileSystemWatcherFactory = () => _replayFileSystemWatcherFactory.Create(),
+            IncludeSubdirectories = true
+        };
 
         _fileWatcher.OnCreated += (_, ev) => _events.Enqueue(ev);
         _fileWatcher.OnDeleted += (_, ev) => _events.Enqueue(ev);
@@ -34,7 +36,7 @@ public class FileWatcherExIntegrationTest : IDisposable
         _fileWatcher.OnRenamed += (_, ev) => _events.Enqueue(ev);
     }
 
-    
+
     [Fact]
     public void Create_Single_File()
     {
@@ -46,7 +48,7 @@ public class FileWatcherExIntegrationTest : IDisposable
         AssertEqualNormalized(@"C:\temp\fwtest\a.txt", ev.FullPath);
         Assert.Equal("", ev.OldFullPath);
     }
-    
+
 
     [Fact]
     public void Create_And_Remove_Single_File()
@@ -89,7 +91,7 @@ public class FileWatcherExIntegrationTest : IDisposable
         Assert.Equal("", ev3.OldFullPath);
     }
 
-    
+
     [Fact]
     // filters out 2nd "changed" event
     public void Create_Single_File_Via_WSL2()
@@ -102,8 +104,8 @@ public class FileWatcherExIntegrationTest : IDisposable
         AssertEqualNormalized(@"C:\temp\fwtest\a.txt", ev.FullPath);
         Assert.Equal("", ev.OldFullPath);
     }
-    
-    
+
+
     [Fact]
     // scenario creates "created" "changed" and "renamed" event.
     // resulting event is just "created" with the filename taken from "renamed"
@@ -118,7 +120,7 @@ public class FileWatcherExIntegrationTest : IDisposable
         Assert.Null(ev.OldFullPath);
     }
 
-    
+
     [Fact]
     public void Create_Rename_And_Remove_Single_File_Via_WSL2()
     {
@@ -126,7 +128,7 @@ public class FileWatcherExIntegrationTest : IDisposable
         Assert.Empty(_events);
     }
 
-    
+
     [Fact]
     public void Create_Rename_And_Remove_Single_File_With_Wait_Time_Via_WSL2()
     {
@@ -148,8 +150,8 @@ public class FileWatcherExIntegrationTest : IDisposable
         AssertEqualNormalized(@"C:\temp\fwtest\b.txt", ev3.FullPath);
         Assert.Equal("", ev3.OldFullPath);
     }
-    
-    
+
+
     [Fact]
     public void Manually_Create_And_Rename_File_Via_Windows_Explorer()
     {
@@ -201,7 +203,7 @@ public class FileWatcherExIntegrationTest : IDisposable
 
         Assert.Equal(ChangeType.CREATED, ev1.ChangeType);
         AssertEqualNormalized(@"C:\temp\fwtest\test.png.crdownload", ev1.FullPath);
-        
+
         Assert.Equal(ChangeType.RENAMED, ev2.ChangeType);
         AssertEqualNormalized(@"C:\temp\fwtest\test.png", ev2.FullPath);
         AssertEqualNormalized(@"C:\temp\fwtest\test.png.crdownload", ev2.OldFullPath);
@@ -216,10 +218,10 @@ public class FileWatcherExIntegrationTest : IDisposable
         Assert.Equal(2, _events.Count);
         var ev1 = _events.ToList()[0];
         var ev2 = _events.ToList()[1];
-        
+
         Assert.Equal(ChangeType.CREATED, ev1.ChangeType);
         AssertEqualNormalized(@"C:\temp\fwtest\subdir", ev1.FullPath);
-        
+
         Assert.Equal(ChangeType.CHANGED, ev2.ChangeType);
         AssertEqualNormalized(@"C:\temp\fwtest\subdir", ev2.FullPath);
         Assert.Equal(@"", ev2.OldFullPath);
@@ -235,10 +237,10 @@ public class FileWatcherExIntegrationTest : IDisposable
         var ev2 = _events.ToList()[1];
         var ev3 = _events.ToList()[2];
         var ev4 = _events.ToList()[3];
-        
+
         Assert.Equal(ChangeType.CREATED, ev1.ChangeType);
         AssertEqualNormalized(@"C:\temp\fwtest\subdir", ev1.FullPath);
-        
+
         Assert.Equal(ChangeType.CREATED, ev2.ChangeType);
         AssertEqualNormalized(@"C:\temp\fwtest\subdir\a.txt", ev2.FullPath);
         Assert.Equal(@"", ev2.OldFullPath);
@@ -258,25 +260,29 @@ public class FileWatcherExIntegrationTest : IDisposable
     {
         using var dir = new TempDir();
         var watcher = new ReplayFileSystemWatcherWrapper();
-        
-        var uut = new FileSystemWatcherEx(dir.FullPath);
-        uut.FileSystemWatcherFactory = () => watcher;
+
+        var uut = new FileSystemWatcherEx(dir.FullPath)
+        {
+            FileSystemWatcherFactory = () => watcher
+        };
         uut.Filters.Add("*.foo");
         uut.Filters.Add("*.bar");
-        
+
         uut.Start();
-        Assert.Equal(new List<string>{"*.foo", "*.bar"}, watcher.Filters);
+        Assert.Equal(new List<string> { "*.foo", "*.bar" }, watcher.Filters);
     }
-    
+
     [Fact]
     public void Set_Filter()
     {
         using var dir = new TempDir();
         var watcher = new ReplayFileSystemWatcherWrapper();
-        
-        var uut = new FileSystemWatcherEx(dir.FullPath);
-        uut.FileSystemWatcherFactory = () => watcher;
-        
+
+        var uut = new FileSystemWatcherEx(dir.FullPath)
+        {
+            FileSystemWatcherFactory = () => watcher
+        };
+
         // "all files" by default 
         Assert.Equal("*", uut.Filter);
 
@@ -285,7 +291,7 @@ public class FileWatcherExIntegrationTest : IDisposable
 
         // two filter entries
         Assert.Equal(2, uut.Filters.Count);
-        
+
         // if multiple filters, only first is displayed. TODO Why ? 
         Assert.Equal("*.foo", uut.Filter);
 
@@ -294,8 +300,8 @@ public class FileWatcherExIntegrationTest : IDisposable
         Assert.Single(uut.Filters);
     }
 
-    
-    
+
+
     [Fact(Skip = "requires real (Windows) file system")]
     public void Simple_Real_File_System_Test()
     {
@@ -315,8 +321,8 @@ public class FileWatcherExIntegrationTest : IDisposable
         }
 
         _fileWatcher.StartForTesting(
-            p => FileAttributes.Normal, 
-            p => Array.Empty<DirectoryInfo>());
+            p => FileAttributes.Normal,
+            p => []);
         File.Create(testFile);
         Thread.Sleep(250);
         fw.Stop();
@@ -327,7 +333,7 @@ public class FileWatcherExIntegrationTest : IDisposable
         Assert.Equal(@"c:\temp\fwtest\b.txt", ev.FullPath);
         Assert.Equal("", ev.OldFullPath);
     }
-    
+
     // cleanup
     public void Dispose()
     {
@@ -340,14 +346,14 @@ public class FileWatcherExIntegrationTest : IDisposable
         _fileWatcher.StartForTesting(
             p => FileAttributes.Normal,
             // only used for FullName
-            p => new[] { new DirectoryInfo(p)});
+            p => [new DirectoryInfo(p)]);
         _replayFileSystemWatcherFactory.RootWatcher.Replay(csvFile);
         _fileWatcher.Stop();
     }
-    
+
     private class ReplayFileSystemWatcherFactory
     {
-        private readonly List<ReplayFileSystemWatcherWrapper> _wrappers = new(); 
+        private readonly List<ReplayFileSystemWatcherWrapper> _wrappers = [];
 
         public ReplayFileSystemWatcherWrapper Create()
         {
@@ -360,7 +366,7 @@ public class FileWatcherExIntegrationTest : IDisposable
         // This is the one which is registered first and watches the root directory.
         public ReplayFileSystemWatcherWrapper RootWatcher => _wrappers[0];
     }
-    
+
     // little hack to make the path comparision platform independent 
     private static void AssertEqualNormalized(string expected, string? actual)
     {
