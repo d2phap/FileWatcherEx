@@ -4,7 +4,6 @@ using Moq;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace FileWatcherExTests;
 

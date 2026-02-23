@@ -2,7 +2,6 @@
 using FileWatcherExTests.Helper;
 using System.Collections.Concurrent;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace FileWatcherExTests;
 
